@@ -1,2 +1,2 @@
 # PSCA
-This repository contains scripts to run the PSCA system
+This repository contains scripts used to run the PSCA system.
