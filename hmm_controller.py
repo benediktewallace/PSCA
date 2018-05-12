@@ -7,7 +7,6 @@ import serial
 import librosa
 
 from hmm_viterbi import viterbi
-#import music21
 
 
 
@@ -23,7 +22,7 @@ LLEN = int((60/BPM)*BEATS*SAMPLE_RATE) # Use % blocksize ??
 in_index = 0
 out_index = 0
 
-cycle = np.zeros((int(LLEN), 2),dtype='float32') # remove int - unnescasary?
+cycle = np.zeros((int(LLEN), 2),dtype='float32') 
 new_layer = np.zeros((int(LLEN), 2),dtype='float32')
 chord_layer = np.zeros((int(LLEN), 2),dtype='float32')
 
@@ -134,43 +133,13 @@ def get_intervals(chord_name):
             return seq
 
 
-'''def to_note_vector(indata):
-    
-    # TO DO: 
-    # overtones? are added as well, set some higher threshhold for mag or limit freq range to one reasonable for voice?
-
-    pitches, magnetude = librosa.piptrack(y=indata[:,1],fmin=300.0,fmax=3000.0, sr=SAMPLE_RATE)
-    nv = np.zeros(12)
-    step = 1
-    _, ts_max = magnetude.shape
-    #print("MAX TIME SLICES ", ts_max)
-
-    for ts in range(0, ts_max, step):
-        index = magnetude[:, ts].argmax()
-        pitch = pitches[index, ts]
-        if pitch != 0.0:
-            note = librosa.hz_to_note(pitch, octave=False)
-            note_idx = note_names.index(note[0])
-            nv[note_idx] += 1.
-
-    for x in range(len(nv)):
-        if nv[x] != 0:
-            nv[x] = nv[x] / 4
-    print("Note vector: ", nv)
-    return nv'''
-
-
 def to_note_vector(indata):
     global song_key
-    # TO DO: 
-    # overtones? are added as well, set some higher threshhold for mag or limit freq range to one reasonable for voice?
-    # TRANSPOSE TO C
 
     pitches, magnetude = librosa.piptrack(y=indata[:,1],fmin=250.0,fmax=1050.0, sr=SAMPLE_RATE)
     nv = np.zeros(12)
     step = 1
     _, ts_max = magnetude.shape
-    #print("MAX TIME SLICES ", ts_max)
 
     for ts in range(0, ts_max, step):
         index = magnetude[:, ts].argmax()
@@ -231,9 +200,6 @@ def find_songKey(indata):
     print("findKey: ",key)
     keyId = note_names.index(key[0])
     song_key = keyId
-    #seq = [keyId, keyId+4, keyId+7]
-    #construct_chord(seq)
-
 
 
 
@@ -245,7 +211,6 @@ def construct_chord(seq):
     e_size = int(l/8)
 
     for keyId in seq: # MINOR THIRD CHORD (major = 0, 4, 3)
-        #keyId += tone
         count = 0
         if keyId in noteBank: # ELSE PITCH A NOTE TO CREATE MISSING NOTE?
             print("Adding note ", note_names[keyId])
@@ -286,9 +251,9 @@ def construct_chord(seq):
                 l_pitched = librosa.effects.pitch_shift(n_bank[:,0], SAMPLE_RATE, n_steps=n_steps)
                 e = np.zeros((e_size,2))
 
-                e[:,1] = r_pitched[:]#r_pitched[e_size:e_size*2]
-                e[:,0] = l_pitched[:]#l_pitched[e_size:e_size*2]
-
+                e[:,1] = r_pitched[:]
+                e[:,0] = l_pitched[:]
+                
                 # try to make a sort of cross fade. samplerate/10 = 10ms
                 ms = int((SAMPLE_RATE/10))
                 ramp = np.linspace(0.0,1.0,num=ms)
@@ -302,41 +267,7 @@ def construct_chord(seq):
                 for e_note in range(0,8):
                     layer[count:e_size+count] = np.add(e,layer[count:e_size+count])
                     count += e_size  
-            '''if bool(noteBank):
-                for n in note_names:
-                    n_index = note_names.index(n)
-                    if n_index in noteBank:
-                        #pitch it
-                        print(" adding pithched layer")
-                        
-                        n_steps = 0
-                        if n_index < keyId:
-                            n_steps = keyId - n_index
-                        else:
-                            n_steps = n_index + keyId
-                        n_bank = noteBank.get(n_index)
-                        r_pitched = librosa.effects.pitch_shift(n_bank[:,1], SAMPLE_RATE, n_steps=n_steps)
-                        l_pitched = librosa.effects.pitch_shift(n_bank[:,0], SAMPLE_RATE, n_steps=n_steps)
-                       
-                        e = np.zeros((e_size,2))
-
-                        e[:,1] = r_pitched[e_size:e_size*2]
-                        e[:,0] = l_pitched[e_size:e_size*2]
-
-                        # try to make a sort of cross fade. samplerate/10 = 10ms
-                        ms = int((SAMPLE_RATE/10))
-                        ramp = np.linspace(0.0,1.0,num=ms)
-                        
-                        e[:ms,1] = e[:ms,1]*ramp
-                        e[e_size-ms:,1] = e[e_size-ms:,1]*ramp
-
-                        e[:ms,0] = e[:ms,0]*ramp
-                        e[e_size-ms:,0] = e[e_size-ms:,0]*ramp
-
-                        for e_note in range(0,8):
-                            layer[count:e_size+count] = np.add(e,layer[count:e_size+count])
-                            count += e_size            
-                        break;'''
+           
     chord_layer = np.zeros_like(cycle)
     chord_layer[:] = layer.dot(0.6)
 
@@ -348,10 +279,7 @@ def bank(indata):
     # try to find the pitch of each quarter note.
     # save the audio to bank - marked with its pitch 
     
-    # TODO: 
-    # Use split from librosa to get index of non silent areas in the indata?
-    # find time  of highest magnitude within each q note slice of indata ? maybe rethink this and use e-note sized slices!
-
+ 
     l,_ = indata.shape
     #q_size = int(l/4)
     q_size = int(l/8)
@@ -388,10 +316,7 @@ def bank(indata):
                 note = librosa.hz_to_note(pitch, octave=False)
                 print("Bank: ",note)
                 keyId = note_names.index(note[0])
-                #if keyId in noteBank:
-                #noteBank[keyId].append(q)
-                #else:
-                #noteBank[keyId] = list(q)
+                
                 noteBank[keyId] = q
 
         count += q_size
@@ -441,8 +366,6 @@ while True:
                     first_loop = False
                     find_songKey(new_layer.copy())
                 hmm_chord(new_layer.copy())
-                #findKey_arbitrary(new_layer.copy())
-                #findKey_from_notes(new_layer.copy())
                 new_layer = np.zeros_like(cycle)
             else:
                 recmode = True
@@ -452,17 +375,7 @@ while True:
         elif ino == b'c': # CLEAR LOOP
             cycle = np.zeros((int(LLEN),2))
             new_layer = np.zeros_like(cycle)
-            #chord_layer = np.zeros_like(cycle) # rename ml layer chord layer
             nv_list = []
 
 
 
-
-'''
-
-To do:
-In construct_chord():
-    find shortest pitch path, pithch down if that is closer to the correct note.
-
-
-'''
