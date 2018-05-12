@@ -16,12 +16,12 @@ SAMPLE_RATE = 48000
 BPM = 80 # replaced later with arduino input, but default is 80
 BEATS = 4 # beats pr measure/loop
 CHANNELS = 2
-LLEN = int((60/BPM)*BEATS*SAMPLE_RATE) # Use % blocksize ??
+LLEN = int((60/BPM)*BEATS*SAMPLE_RATE)
 
 in_index = 0
 out_index = 0
 
-cycle = np.zeros((int(LLEN), 2),dtype='float32') # remove int - unnescasary?
+cycle = np.zeros((int(LLEN), 2),dtype='float32') 
 new_layer = np.zeros((int(LLEN), 2),dtype='float32')
 chord_layer = np.zeros((int(LLEN), 2),dtype='float32')
 
@@ -139,7 +139,6 @@ def to_note_vector(indata):
     nv = np.zeros(12)
     step = 1
     _, ts_max = magnetude.shape
-    #print("MAX TIME SLICES ", ts_max)
 
     for ts in range(0, ts_max, step):
         index = magnetude[:, ts].argmax()
@@ -159,16 +158,6 @@ def to_note_vector(indata):
 
 
 
-'''def hmm_chord(indata):
-    # save notevectors so that we accum observations at each call 
-    #nv = []
-    nv = to_note_vector(indata)
-    nv_list.append(nv) 
-    prediction, _, _ = viterbi(nv_list, start_probability, transition_probability, emission_probability)
-    print("HMM predicted ", prediction)
-    print("generating chord ",prediction[-1])
-    seq = get_intervals(prediction[-1])
-    construct_chord(seq) #adds the predicted chord to the playback loop'''
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
@@ -283,9 +272,9 @@ def construct_chord(seq):
                 l_pitched = librosa.effects.pitch_shift(n_bank[:,0], SAMPLE_RATE, n_steps=n_steps)
                 e = np.zeros((e_size,2))
 
-                e[:,1] = r_pitched[:]#r_pitched[e_size:e_size*2]
-                e[:,0] = l_pitched[:]#l_pitched[e_size:e_size*2]
-
+                e[:,1] = r_pitched[:
+                e[:,0] = l_pitched[:]
+                                   
                 # try to make a sort of cross fade. samplerate/10 = 10ms
                 ms = int((SAMPLE_RATE/10))
                 ramp = np.linspace(0.0,1.0,num=ms)
@@ -299,41 +288,7 @@ def construct_chord(seq):
                 for e_note in range(0,8):
                     layer[count:e_size+count] = np.add(e,layer[count:e_size+count])
                     count += e_size  
-            '''if bool(noteBank):
-                for n in note_names:
-                    n_index = note_names.index(n)
-                    if n_index in noteBank:
-                        #pitch it
-                        print(" adding pithched layer")
-                        
-                        n_steps = 0
-                        if n_index < keyId:
-                            n_steps = keyId - n_index
-                        else:
-                            n_steps = n_index + keyId
-                        n_bank = noteBank.get(n_index)
-                        r_pitched = librosa.effects.pitch_shift(n_bank[:,1], SAMPLE_RATE, n_steps=n_steps)
-                        l_pitched = librosa.effects.pitch_shift(n_bank[:,0], SAMPLE_RATE, n_steps=n_steps)
-                       
-                        e = np.zeros((e_size,2))
-
-                        e[:,1] = r_pitched[e_size:e_size*2]
-                        e[:,0] = l_pitched[e_size:e_size*2]
-
-                        # try to make a sort of cross fade. samplerate/10 = 10ms
-                        ms = int((SAMPLE_RATE/10))
-                        ramp = np.linspace(0.0,1.0,num=ms)
-                        
-                        e[:ms,1] = e[:ms,1]*ramp
-                        e[e_size-ms:,1] = e[e_size-ms:,1]*ramp
-
-                        e[:ms,0] = e[:ms,0]*ramp
-                        e[e_size-ms:,0] = e[e_size-ms:,0]*ramp
-
-                        for e_note in range(0,8):
-                            layer[count:e_size+count] = np.add(e,layer[count:e_size+count])
-                            count += e_size            
-                        break;'''
+           
     chord_layer = np.zeros_like(cycle)
     chord_layer[:] = layer.dot(0.6)
 
@@ -345,12 +300,7 @@ def bank(indata):
     # try to find the pitch of each quarter note.
     # save the audio to bank - marked with its pitch 
     
-    # TODO: 
-    # Use split from librosa to get index of non silent areas in the indata?
-    # find time  of highest magnitude within each q note slice of indata ? maybe rethink this and use e-note sized slices!
-
     l,_ = indata.shape
-    #q_size = int(l/4)
     q_size = int(l/8)
     q = np.zeros((q_size, 2), dtype='float32') 
     count = 0
@@ -385,10 +335,6 @@ def bank(indata):
                 note = librosa.hz_to_note(pitch, octave=False)
                 print("Bank: ",note)
                 keyId = note_names.index(note[0])
-                #if keyId in noteBank:
-                #noteBank[keyId].append(q)
-                #else:
-                #noteBank[keyId] = list(q)
                 noteBank[keyId] = q
 
         count += q_size
@@ -434,14 +380,12 @@ while True:
                 in_stream.stop()
                 print("stopped rec")
                 bank(new_layer.copy())
-                #hmm_chord(new_layer.copy())
                 if first_loop:
                     first_loop = False
                     find_songKey(new_layer.copy())
                 nv_list = dl_chord(new_layer.copy(), nv_list)
 
-                #findKey_arbitrary(new_layer.copy())
-                #findKey_from_notes(new_layer.copy())
+
                 new_layer = np.zeros_like(cycle)
             else:
                 recmode = True
@@ -451,17 +395,5 @@ while True:
         elif ino == b'c': # CLEAR LOOP
             cycle = np.zeros((int(LLEN),2))
             new_layer = np.zeros_like(cycle)
-            #chord_layer = np.zeros_like(cycle) # rename ml layer chord layer
             nv_list = []
 
-
-
-
-'''
-
-To do:
-In construct_chord():
-    find shortest pitch path, pithch down if that is closer to the correct note.
-
-
-'''
