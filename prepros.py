@@ -6,15 +6,15 @@ import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
 
 #########################################################
-#	Benedikte Wallace 2018								#
-# 														#
-#	Process music xml files:							#
-#														#				
-#   Split each score (file) 							#
-#   into measurers and create a list of notevector 		#
-#   and chord name pairs which are saved and used as.   # 
-#   training data.										#
-#														#
+#	Benedikte Wallace 2018								
+# 														
+#	Process music xml files:							
+#																		
+#   Split each score (file) 							
+#   into measurers and create a list of notevector 		
+#   and chord name pairs which are saved and used as
+#   training data.										
+#														
 #########################################################
 
 
@@ -270,8 +270,28 @@ print("Number of chords in the dataset: ",len(measures_notes), ", number of note
 #p.run()
 
 
-# SAVE MAJOR AND MINOR SONGS IN SEPERATE FOLDERS.
+# SAVE  LIST OF CHORDS (songs seperated by ENDTOKEN) AND ARRAY OF CORRESPONDING NOTE VECTORS
+nv_list = create_alt_nv()
 
+np.savez('nvs.npy', nv_list)
+
+num_chord_ex = 0
+
+with open(FOLDER+".txt", "w") as text_file:    
+    for index, item in enumerate(measures_chords):
+    	if item == 60 and measures_chords[(index+1)%len(measures_chords)] == 60:
+    		continue
+    	else:
+    		text_file.write("%s " % index_to_chordname(item))
+    		num_chord_ex += 1
+
+
+print("Number of chords in the dataset: ",num_chord_ex, ", number of note vectors (should be equal): ", len(nv_list))
+
+
+
+# SAVE MAJOR AND MINOR SONGS IN SEPERATE FOLDERS.
+'''
 nv_list = create_alt_nv()
 
 maj_nvs = []
@@ -298,6 +318,6 @@ with open(FOLDER[1:] + "_24major.txt", "w") as major_file:
 
 np.savez('24maj_nvs.npy', maj_nvs)
 np.savez('24min_nvs.npy', min_nvs)
-
+'''
 
 
